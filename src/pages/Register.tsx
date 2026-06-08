@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { UserPlus, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  UserPlus,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  Eye,
+  LogIn,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Register() {
@@ -13,12 +21,17 @@ export default function Register() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { configured } = useAuth();
+  const { configured, demoSignIn } = useAuth();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (!configured) {
+      setError('当前未配置 Supabase，无法注册真实账户。可使用演示模式体验全部功能。');
+      return;
+    }
 
     if (password.length < 6) {
       setError('密码至少需要 6 个字符');
@@ -54,21 +67,23 @@ export default function Register() {
     }
   };
 
-  if (!configured) {
-    return (
-      <div className="min-h-screen bg-animated-gradient flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl text-center text-white">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-          <h1 className="text-2xl font-bold mb-2">Supabase 未配置</h1>
-          <p className="text-white/70">请先配置 .env 文件</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-animated-gradient flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+        {!configured && (
+          <div className="mb-6 p-4 rounded-2xl bg-yellow-400/15 border border-yellow-300/40 text-yellow-50 text-sm">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-200 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-yellow-100 mb-1">Supabase 未配置</p>
+                <p className="text-yellow-100/80 text-xs leading-relaxed">
+                  复制项目根目录下的 .env.example 为 .env，并填入 Supabase URL 和匿名密钥后，即可使用真实账户登录。当前可直接使用演示模式体验全部功能。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
             <UserPlus className="w-8 h-8 text-white" />
@@ -95,10 +110,11 @@ export default function Register() {
             <label className="block text-white/80 text-sm mb-2">邮箱</label>
             <input
               type="email"
-              required
+              required={configured}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition"
+              disabled={!configured}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition disabled:opacity-50"
               placeholder="you@example.com"
             />
           </div>
@@ -108,7 +124,8 @@ export default function Register() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition"
+              disabled={!configured}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition disabled:opacity-50"
               placeholder="你的名字"
             />
           </div>
@@ -120,12 +137,14 @@ export default function Register() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition font-mono"
+              disabled={!configured}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition font-mono disabled:opacity-50"
               placeholder="my_username"
             />
-            {username && (
+            {username && configured && (
               <p className="text-white/50 text-xs mt-1">
-                你的链接将是：{typeof window !== 'undefined' && window.location.host}/{username}
+                你的链接将是：
+                {typeof window !== 'undefined' && window.location.host}/{username}
               </p>
             )}
           </div>
@@ -133,27 +152,65 @@ export default function Register() {
             <label className="block text-white/80 text-sm mb-2">密码</label>
             <input
               type="password"
-              required
+              required={configured}
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition"
+              disabled={!configured}
+              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-transparent transition disabled:opacity-50"
               placeholder="至少 6 个字符"
             />
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !configured}
             className="w-full py-3 rounded-xl bg-white text-purple-700 font-semibold hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
-            {loading ? '注册中...' : '注册账户'}
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <UserPlus className="w-5 h-5" />
+            )}
+            {loading ? '注册中...' : configured ? '注册账户' : '已禁用（未配置）'}
           </button>
         </form>
 
+        <div className="mt-6">
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-white/20" />
+            <span className="text-white/50 text-xs">或</span>
+            <div className="flex-1 h-px bg-white/20" />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                demoSignIn();
+                navigate('/dashboard', { replace: true });
+              }}
+              className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5 text-yellow-200" />
+              演示模式 — 立即体验
+            </button>
+            <Link
+              to="/demo"
+              className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white/90 font-medium hover:bg-white/10 transition flex items-center justify-center gap-2"
+            >
+              <Eye className="w-5 h-5" />
+              查看演示导航页
+            </Link>
+          </div>
+        </div>
+
         <p className="mt-6 text-center text-white/70 text-sm">
           已有账户？{' '}
-          <Link to="/login" className="text-white font-medium underline hover:text-white/90">
+          <Link
+            to="/login"
+            className="text-white font-medium underline hover:text-white/90 inline-flex items-center gap-1"
+          >
+            <LogIn className="w-3.5 h-3.5" />
             去登录
           </Link>
         </p>

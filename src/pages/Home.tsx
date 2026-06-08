@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Loader2, User as UserIcon, AlertCircle } from 'lucide-react';
 import { useProfile, useLinks } from '@/hooks/useData';
@@ -6,13 +6,22 @@ import LinkButton from '@/components/LinkButton';
 import ThemeControls from '@/components/ThemeControls';
 import CategoryTabs, { type Category } from '@/components/CategoryTabs';
 import QRCodeSection from '@/components/QRCodeSection';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme, type ColorTheme } from '@/hooks/useTheme';
 import { getIconByName } from '@/lib/icons';
+
+const THEME_NAME_MAP: Record<string, ColorTheme> = {
+  'theme-purple': 'purple',
+  'theme-ocean': 'ocean',
+  'theme-forest': 'forest',
+  'theme-sunset': 'sunset',
+  'theme-rose': 'rose',
+};
 
 export default function Home() {
   const { username } = useParams<{ username: string }>();
   const { isDark, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const [activeCategory, setActiveCategory] = useState<Category>('social');
+  const [profileThemeApplied, setProfileThemeApplied] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useProfile(username);
   const { query: linksQuery } = useLinks(profile?.id);
@@ -20,11 +29,23 @@ export default function Home() {
   const isLoading = profileLoading || linksQuery.isLoading;
   const links = linksQuery.data || [];
 
-  const themeClass = profile?.theme || 'theme-purple';
+  useEffect(() => {
+    setProfileThemeApplied(false);
+  }, [username]);
+
+  useEffect(() => {
+    if (profile && profile.theme && !profileThemeApplied) {
+      const mapped = THEME_NAME_MAP[profile.theme];
+      if (mapped) {
+        setColorTheme(mapped);
+      }
+      setProfileThemeApplied(true);
+    }
+  }, [profile, profileThemeApplied, setColorTheme]);
 
   if (isLoading) {
     return (
-      <div className={`min-h-full bg-animated-gradient ${themeClass} ${isDark ? '' : 'light'} flex items-center justify-center`}>
+      <div className={`min-h-full bg-animated-gradient ${isDark ? '' : 'light'} flex items-center justify-center`}>
         <Loader2 className="w-10 h-10 text-white animate-spin" />
       </div>
     );
@@ -32,7 +53,7 @@ export default function Home() {
 
   if (!profile) {
     return (
-      <div className={`min-h-full bg-animated-gradient theme-purple ${isDark ? '' : 'light'} flex items-center justify-center p-6`}>
+      <div className={`min-h-full bg-animated-gradient ${isDark ? '' : 'light'} flex items-center justify-center p-6`}>
         <div className="max-w-md w-full text-center text-white">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 opacity-80" />
           <h1 className="text-2xl font-bold mb-2">未找到用户</h1>
@@ -40,16 +61,16 @@ export default function Home() {
             用户 <span className="font-mono bg-white/10 px-2 py-1 rounded">{username || ''}</span> 不存在
           </p>
           <Link
-            to="/"
+            to="/demo"
             className="inline-block px-6 py-3 rounded-xl bg-white text-purple-700 font-semibold hover:bg-white/90 transition"
           >
-            返回首页
+            查看演示页
           </Link>
           <Link
-            to="/register"
+            to="/login"
             className="inline-block ml-3 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition"
           >
-            立即注册
+            登录后台
           </Link>
         </div>
       </div>
@@ -65,7 +86,7 @@ export default function Home() {
   const activeLinks = linksByCategory[activeCategory];
 
   return (
-    <div className={`min-h-full bg-animated-gradient ${themeClass} ${isDark ? '' : 'light'} flex items-center justify-center px-4 py-12 sm:py-16 transition-colors duration-500`}>
+    <div className={`min-h-full bg-animated-gradient ${isDark ? '' : 'light'} flex items-center justify-center px-4 py-12 sm:py-16 transition-colors duration-500`}>
       <ThemeControls
         isDark={isDark}
         toggleTheme={toggleTheme}

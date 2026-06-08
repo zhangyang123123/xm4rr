@@ -10,6 +10,12 @@ interface LinkButtonProps {
   profileId?: string;
 }
 
+const SPECIAL_PROTOCOLS = ['mailto:', 'tel:', 'sms:', 'fax:', 'javascript:', '#'];
+
+function isSpecialProtocol(url: string): boolean {
+  return SPECIAL_PROTOCOLS.some((p) => url.toLowerCase().startsWith(p));
+}
+
 export default function LinkButton({ label, url, icon: Icon, index, linkId, profileId }: LinkButtonProps) {
   const handleClick = () => {
     if (linkId && profileId) {
@@ -17,12 +23,15 @@ export default function LinkButton({ label, url, icon: Icon, index, linkId, prof
     }
   };
 
+  const special = isSpecialProtocol(url);
+
+  const linkProps = special
+    ? ({ href: url, 'aria-label': label } as const)
+    : ({ href: url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': label } as const);
+
   return (
     <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={label}
+      {...linkProps}
       onClick={handleClick}
       className="
         group relative flex items-center justify-center gap-3
